@@ -1,0 +1,49 @@
+#include "Offline/fcl/minimalMessageService.fcl"
+#include "Offline/fcl/standardServices.fcl"
+#include "Offline/fcl/standardProducers.fcl"
+#include "Offline/CommonMC/fcl/prolog.fcl"
+#include "Production/JobConfig/reco/prolog.fcl"
+
+process_name: g4CaloExample
+
+
+source   : {module_type: RootInput}
+services : @local::Services.Reco
+
+
+physics: {
+
+  producers : 
+  {      
+      @table::CaloReco.producers
+      @table::CaloCluster.producers
+      @table::CaloMC.TruthProducers
+      @table::CaloClusterMC.producers	
+  }
+
+  analyzers : 
+  {
+      CaloExample: {
+          module_type                : CaloExample
+          vdCollection               : "compressDigiMCs:virtualdetector"
+          caloHitCollection          : CaloHitMaker
+          caloClusterCollection      : CaloClusterMaker
+          caloHitTruth               : CaloHitTruthMatch
+          caloClusterTruth           : CaloClusterTruthMatch
+      }
+  }
+  
+  p1: [@sequence::CaloReco.Reco, @sequence::CaloCluster.Reco, @sequence::CaloMC.TruthMatch]
+  e1: [CaloExample]   
+
+  trigger_paths: [p1]
+  end_paths:     [e1]
+}
+
+physics.producers.CaloHitTruthMatch.caloShowerSimCollection   : "compressDigiMCs"
+physics.producers.CaloHitTruthMatch.primaryParticle           : "compressDigiMCs"
+
+services.TFileService.fileName        : "caloNN.root"
+
+services.GeometryService.inputFile    : "Production/JobConfig/common/geom_baseline.txt"
+#include "Production/Validation/database.fcl"
